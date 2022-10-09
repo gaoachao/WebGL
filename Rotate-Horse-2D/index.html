@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+	<meta charset="utf-8" />
+	<title>PlayCanvas Hello Cube</title>
+	<meta name="viewport"
+		content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no" />
+	<style>
+		body {
+			margin: 0;
+			overflow: hidden;
+		}
+	</style>
+	<script src="https://code.playcanvas.com/playcanvas-stable.min.js"></script>
+	<script src="./JS/playcanvas-anim.js"></script>
+	<script src="./JS/playcanvas-gltf.js"></script>
+</head>
+
+<body>
+	<canvas id="application"></canvas>
+	<script>
+		// 创建一个PlayCanvas应用
+		const canvas = document.getElementById("application");
+		const app = new pc.Application(canvas, {
+			mouse: new pc.Mouse(document.body),
+			touch: new pc.TouchDevice(document.body),
+			elementInput: new pc.ElementInput(canvas),
+		});
+
+		// 在全屏模式下填满可用空间
+		app.setCanvasFillMode(pc.FILLMODE_FILL_WINDOW);
+		app.setCanvasResolution(pc.RESOLUTION_AUTO);
+
+		// 确保在窗口尺寸变化同时画布也同时改变其大小
+		window.addEventListener("resize", () => app.resizeCanvas());
+
+		// 创建一个立方体
+		// const box = new pc.Entity("cube");
+		// box.addComponent("model", {
+		// 	type: "box",
+		// });
+		// app.root.addChild(box);
+
+		// 创建2D屏幕
+		const screen = new pc.Entity();
+		screen.addComponent("screen", {
+			referenceResolution: new pc.Vec2(1280, 720),
+			scaleBlend: 0.5,
+			scaleMode: pc.SCALEMODE_BLEND,
+			screenSpace: true,
+		});
+		app.root.addChild(screen);
+
+
+
+		// 创建一个摄像头
+		const camera = new pc.Entity("camera");
+		camera.addComponent("camera", {
+			clearColor: new pc.Color(0.1, 0.1, 0.1),
+		});
+		app.root.addChild(camera);
+		camera.setPosition(0, 0, 100);
+
+		// 创建一个指向灯
+		const light = new pc.Entity("light");
+		light.addComponent("light");
+		app.root.addChild(light);
+		light.setEulerAngles(45, 0, 0);
+
+		// 引入外部资源，将glb file转换为entity
+		const gltf = new pc.Entity('glft');
+		app.assets.loadFromUrl('./assets/horse.glb', 'binary', function (err, asset) {
+			const glb = asset.resource;
+			loadGlb(glb, app.graphicsDevice, function (err, res) {
+				// Wrap the model as an asset and add to the asset registry
+				// 将模型包装为资产并添加到资产注册表
+				const asset = new pc.Asset('gltf', 'model', {
+					url: ''
+				});
+				asset.resource = res.model;
+				asset.loaded = true;
+				app.assets.add(asset);
+
+				// Add the loaded scene to the hierarchy
+				// 将加载的场景添加到层次结构
+				// gltf = new pc.Entity('gltf');
+				gltf.addComponent('model', {
+					asset: asset
+				});
+				app.root.addChild(gltf);
+				gltf.rotate(0, 180, 0);
+			});
+		});
+
+		const createButton = (x, y, direction) => {
+			// 创建一个简单的按钮
+			const button = new pc.Entity();
+			button.addComponent("button", {
+				imageEntity: button,
+			});
+
+			button.addComponent("element", {
+				anchor: [0.5, 0.5, 0.5, 0.5],
+				pivot: [0.5, 0.5],
+				height: 40,
+				type: pc.ELEMENTTYPE_IMAGE,
+				width: 128,
+				useInput: true,
+			});
+
+			// 添加点击事件 旋转小马马
+			button.button.on("click", function () {
+				if (direction === 'left') {
+					gltf.rotate(0, -10, 0);
+				} else if (direction === 'right') {
+					gltf.rotate(0, 10, 0);
+				}
+
+			});
+			button.setLocalPosition(x, y, 0);
+			return button;
+		}
+
+
+		screen.addChild(createButton(-325, 0, 'left'));
+		screen.addChild(createButton(325, 0, 'right'));
+
+		app.start();
+	</script>
+</body>
+
+</html>

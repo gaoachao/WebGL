@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+	<meta charset="utf-8" />
+	<title>PlayCanvas Hello Cube</title>
+	<meta name="viewport"
+		content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no" />
+	<style>
+		body {
+			margin: 0;
+			overflow: hidden;
+		}
+	</style>
+	<script src="https://code.playcanvas.com/playcanvas-stable.min.js"></script>
+</head>
+
+<body>
+	<canvas id="application"></canvas>
+	<script>
+		// // 创建一个PlayCanvas应用
+		const canvas = document.getElementById("application");
+		const app = new pc.Application(canvas);
+
+		// 在全屏模式下填满可用空间
+		app.setCanvasFillMode(pc.FILLMODE_FILL_WINDOW);
+		app.setCanvasResolution(pc.RESOLUTION_AUTO);
+
+		// 确保在窗口尺寸变化同时画布也同时改变其大小
+		window.addEventListener("resize", () => app.resizeCanvas());
+
+		pc.WasmModule.setConfig("Ammo", {
+			glueUrl: "./lib/ammo.wasm.js",
+			wasmUrl: "./lib/ammo.wasm.wasm",
+			fallbackUrl: "./lib/ammo.js",
+		});
+
+		pc.WasmModule.getInstance("Ammo", demo);
+		function demo() {
+			app.start();
+			app.systems.rigidbody.gravity.set(0, -9.81, 0);
+
+			// 创建一个摄像头
+			const camera = new pc.Entity("camera");
+			camera.addComponent("camera", {
+				clearColor: new pc.Color(0.1, 0.1, 0.1),
+			});
+			app.root.addChild(camera);
+			camera.setPosition(0, 2, 18);
+
+			// 创建一个指向灯
+			const light = new pc.Entity("light");
+			light.addComponent("light");
+			app.root.addChild(light);
+			light.setEulerAngles(45, 30, 0);
+
+			// 控制颜色
+			function createMaterial(color) {
+				const material = new pc.StandardMaterial();
+				material.diffuse = color;
+				// we need to call material.update when we change its properties
+				material.update();
+				return material;
+			}
+
+			const gray = createMaterial(new pc.Color(0.4, 0.3, 0.3));
+			const red = createMaterial(new pc.Color(0.4, 0.6, 0.7));
+
+			// 创建地板
+			const floor = new pc.Entity();
+			floor.addComponent("render", {
+				type: "box",
+				material: gray,
+			});
+
+			floor.setLocalScale(12, 0.1, 16);
+			// add a rigidbody component so that other objects collide with it
+			floor.addComponent("rigidbody", {
+				type: "static",
+				restitution: 0.5,
+			});
+			// add a collision component
+			floor.addComponent("collision", {
+				type: "box",
+				halfExtents: new pc.Vec3(10, 0.1, 16),
+			});
+			// add the floor to the hierarchy
+			app.root.addChild(floor);
+
+			// 创建斜板
+			const incline = new pc.Entity();
+			incline.addComponent("render", {
+				type: "box",
+				material: red,
+			});
+			incline.addComponent("rigidbody", {
+				type: "static",
+				restitution: 0.5,
+			});
+			incline.addComponent("collision", {
+				type: "box",
+				halfExtents: new pc.Vec3(5, 0.1, 5),
+			});
+			incline.setPosition(0, 3, 0);
+			incline.setLocalScale(12, 0.1, 10);
+			incline.rotate(22, 0, 0);
+			app.root.addChild(incline);
+
+
+			// 坠落物创建函数
+			const createTemplate = function (type, collisionOptions, template) {
+				if (!template) {
+					template = new pc.Entity();
+					template.addComponent("render", {
+						type: type,
+					});
+				}
+				template.addComponent("rigidbody", {
+					type: "dynamic",
+					mass: 50,
+					restitution: 0.5,
+					linearDamping: 0.7,
+				});
+
+				template.addComponent("collision", collisionOptions);
+				return template;
+			};
+
+			const capsuleTemplate = createTemplate("capsule", {
+				type: "capsule",
+				radius: 0.5,
+				height: 2,
+			});
+			capsuleTemplate.setPosition(0, 8, 0);
+			capsuleTemplate.setLocalScale(0.7, 0.7, 0.7);
+			capsuleTemplate.rotate(0,0,89);
+			app.root.addChild(capsuleTemplate);
+		}
+
+
+
+
+	</script>
+</body>
+
+</html>
